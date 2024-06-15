@@ -1,7 +1,6 @@
-import { Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import { LambdaRestApi } from "aws-cdk-lib/aws-apigateway";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
-import { Lambda } from "aws-cdk-lib/aws-ses-actions";
 import { Construct } from "constructs";
 
 export class NodejsAwsShopReactBeStack extends Stack {
@@ -16,6 +15,8 @@ export class NodejsAwsShopReactBeStack extends Stack {
     });
 
     // define api gateway resource
-    new LambdaRestApi(this, "Endpoint", { handler: hello });
+    const gateway = new LambdaRestApi(this, "Endpoint", { handler: hello });
+
+    new CfnOutput(this, "GatewayUrl", { value: gateway.url });
   }
 }
