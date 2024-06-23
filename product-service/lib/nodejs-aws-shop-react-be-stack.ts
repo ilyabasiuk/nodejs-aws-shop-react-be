@@ -1,18 +1,45 @@
 import { CfnOutput, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { Cors, LambdaIntegration, RestApi } from "aws-cdk-lib/aws-apigateway";
 import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
+import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
+import { get } from "http";
 
 export class NodejsAwsShopReactBeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
+    // define dynamodb tables
+    const productsTable = new Table(this, "Products", {
+      partitionKey: { name: "id", type: AttributeType.STRING },
+      tableName: "products",
+      sortKey: { name: "title", type: AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const stocksTable = new Table(this, "Stocks", {
+      partitionKey: { name: "product_id", type: AttributeType.STRING },
+      tableName: "stocks",
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const dynamoPolicy = new PolicyStatement({
+      actions: ["dynamodb:Scan", "dynamodb:Query", "dynamodb:GetItem"],
+      resources: [productsTable.tableArn, stocksTable.tableArn],
+    });
+
+    // define lambda functions
     const getProductsList = new Function(this, "GetProductsListHandler", {
       runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset("lambda"),
       handler: "getProductsList.handler",
+      environment: {
+        PRODUCT_TABLE_NAME: productsTable.tableName,
+        STOCK_TABLE_NAME: stocksTable.tableName,
+      },
     });
+    getProductsList.addToRolePolicy(dynamoPolicy);
 
     const getProductsById = new Function(this, "GetProductsByIdHandler", {
       runtime: Runtime.NODEJS_18_X,
@@ -51,18 +78,5 @@ export class NodejsAwsShopReactBeStack extends Stack {
       .addMethod("GET", new LambdaIntegration(getProductsById));
 
     new CfnOutput(this, "GatewayUrl", { value: productResource.path });
-
-    const productsTable = new Table(this, "Products", {
-      partitionKey: { name: "id", type: AttributeType.STRING },
-      tableName: "products",
-      sortKey: { name: "title", type: AttributeType.STRING },
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-
-    const stocksTable = new Table(this, "Stocks", {
-      partitionKey: { name: "product_id", type: AttributeType.STRING },
-      tableName: "stocks",
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
   }
 }
