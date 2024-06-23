@@ -36,14 +36,15 @@ export class NodejsAwsShopReactBeStack extends Stack {
     });
 
     // define lambda functions
+    const environment = {
+      PRODUCT_TABLE_NAME: productsTable.tableName,
+      STOCK_TABLE_NAME: stocksTable.tableName,
+    };
     const getProductsList = new Function(this, "GetProductsListHandler", {
       runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset("lambda"),
       handler: "getProductsList.handler",
-      environment: {
-        PRODUCT_TABLE_NAME: productsTable.tableName,
-        STOCK_TABLE_NAME: stocksTable.tableName,
-      },
+      environment,
     });
     getProductsList.addToRolePolicy(dynamoPolicy);
 
@@ -51,21 +52,23 @@ export class NodejsAwsShopReactBeStack extends Stack {
       runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset("lambda"),
       handler: "getProductsById.handler",
-      environment: {
-        PRODUCT_TABLE_NAME: productsTable.tableName,
-        STOCK_TABLE_NAME: stocksTable.tableName,
-      },
+      environment,
     });
     getProductsById.addToRolePolicy(dynamoPolicy);
+
+    const createProduct = new Function(this, "CreateProductHandler", {
+      runtime: Runtime.NODEJS_18_X,
+      code: Code.fromAsset("lambda"),
+      handler: "createProduct.handler",
+      environment,
+    });
+    createProduct.addToRolePolicy(dynamoPolicy);
 
     const fillDb = new Function(this, "FillDbHandler", {
       runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset("lambda"),
       handler: "fillDb.handler",
-      environment: {
-        PRODUCT_TABLE_NAME: productsTable.tableName,
-        STOCK_TABLE_NAME: stocksTable.tableName,
-      },
+      environment,
     });
     fillDb.addToRolePolicy(dynamoPolicy);
 
@@ -88,6 +91,8 @@ export class NodejsAwsShopReactBeStack extends Stack {
     productResource
       .addResource("{productId}")
       .addMethod("GET", new LambdaIntegration(getProductsById));
+
+    productResource.addMethod("POST", new LambdaIntegration(createProduct));
 
     new CfnOutput(this, "GatewayUrl", { value: productResource.path });
   }
