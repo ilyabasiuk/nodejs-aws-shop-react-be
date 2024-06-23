@@ -37,6 +37,8 @@ paths:
                 $ref: "#/components/schemas/Product"
         "404":
           description: "Product not found"
+        "400":
+          description: "Invalid product id"
 
 components:
   schemas:
