@@ -19,6 +19,16 @@ export class NodejsAwsShopReactBeStack extends Stack {
       handler: "getProductsById.handler",
     });
 
+    const fillDb = new Function(this, "FillDbHandler", {
+      runtime: Runtime.NODEJS_18_X,
+      code: Code.fromAsset("lambda"),
+      handler: "fillDb.handler",
+      environment: {
+        PRODUCT_TABLE_NAME: "products",
+        STOCK_TABLE_NAME: "stocks",
+      },
+    });
+
     // define api gateway resource
     const gateway = new RestApi(this, "Product Service", {
       restApiName: "Product Service",
