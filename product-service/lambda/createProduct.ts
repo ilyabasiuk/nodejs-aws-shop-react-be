@@ -14,10 +14,16 @@ const docClient = DynamoDBDocumentClient.from(client);
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log("eventBody", event.body);
+  console.log("Request:", event);
 
-  const { title, description, price, count } = JSON.parse(event.body || "{}");
-  if (!title || !description || !price || !count) {
+  let body;
+
+  try {
+    body = JSON.parse(event.body || "{}");
+    if (!body.title || !body.description || !body.price || !body.count) {
+      throw new Error("Product data is required");
+    }
+  } catch (error) {
     return {
       statusCode: 400,
       headers: {
@@ -33,6 +39,7 @@ export const handler: APIGatewayProxyHandler = async (
   try {
     // create product in dynamodb
     const id = v4();
+    const { title, description, price, count } = body;
     const command = new PutCommand({
       TableName: process.env.PRODUCT_TABLE_NAME,
       Item: {
@@ -55,6 +62,17 @@ export const handler: APIGatewayProxyHandler = async (
     });
     const responseStock = await docClient.send(commandStock);
     console.log(responseStock);
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "POST",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: "Product created", uuid: id }),
+    };
   } catch (error) {
     return {
       statusCode: 500,
@@ -67,15 +85,4 @@ export const handler: APIGatewayProxyHandler = async (
       body: JSON.stringify({ message: "Product not created" }),
     };
   }
-
-  return {
-    statusCode: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "POST",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ message: "Product created", uuid: v4() }),
-  };
 };
