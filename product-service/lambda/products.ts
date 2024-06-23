@@ -19,4 +19,22 @@ export const PRODUCTS: Product[] = [
     description: "This is the description for the third product",
     price: 29.99,
   },
+  {
+    id: "d61c93bc-4698-4185-ac6c-4563a0716857",
+    title: "Fourth Product",
+    description: "This is the description for the fourth product",
+    price: 39.99,
+  },
+  {
+    id: "33eb3af1-bdd4-4ad8-8726-7dc2eac7e4fe",
+    title: "Fifth Product",
+    description: "This is the description for the fifth product",
+    price: 49.99,
+  },
+  {
+    id: "8883ae4b-e035-447f-9653-b65291cdeb48",
+    title: "Sixth Product",
+    description: "This is the description for the sixth product",
+    price: 59.99,
+  },
 ];

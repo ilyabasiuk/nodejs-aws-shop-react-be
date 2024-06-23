@@ -4,7 +4,7 @@ info:
   description: "This service serves products."
   version: "0.0.1"
 servers:
-  - url: "https://dyxjm4tjv9.execute-api.eu-west-1.amazonaws.com/{basePath}"
+  - url: "https://7zu57pqm72.execute-api.eu-west-1.amazonaws.com/{basePath}"
     variables:
       basePath:
         default: "prod"
@@ -51,4 +51,6 @@ components:
           type: number
         description:
           type: string
+        count:
+          type: integer
       description: product description

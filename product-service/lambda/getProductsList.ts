@@ -18,12 +18,22 @@ export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   const command = new ScanCommand({
-    ProjectionExpression: "id, title, description, price",
-    // ExpressionAttributeNames: { "#Name": "Name" },
     TableName: process.env.PRODUCT_TABLE_NAME,
   });
   const response: ScanCommandOutput = await docClient.send(command);
   const products = response.Items?.map((item) => unmarshall(item)) || [];
+
+  const commandStock = new ScanCommand({
+    TableName: process.env.STOCK_TABLE_NAME,
+  });
+  const responseStock: ScanCommandOutput = await docClient.send(commandStock);
+  const stocks = responseStock.Items?.map((item) => unmarshall(item)) || [];
+
+  const countMap = stocks.reduce((acc, stock) => {
+    acc[stock.product_id] = stock.count;
+    return acc;
+  }, {});
+
   return {
     statusCode: 200,
     headers: {
@@ -32,6 +42,11 @@ export const handler: APIGatewayProxyHandler = async (
       "Access-Control-Allow-Methods": "GET",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(products),
+    body: JSON.stringify(
+      products.map((product) => ({
+        ...product,
+        count: countMap[product.id] || 0,
+      }))
+    ),
   };
 };

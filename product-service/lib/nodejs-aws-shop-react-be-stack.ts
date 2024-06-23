@@ -25,7 +25,13 @@ export class NodejsAwsShopReactBeStack extends Stack {
     });
 
     const dynamoPolicy = new PolicyStatement({
-      actions: ["dynamodb:Scan", "dynamodb:Query", "dynamodb:GetItem"],
+      actions: [
+        "dynamodb:Scan",
+        "dynamodb:Query",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+      ],
       resources: [productsTable.tableArn, stocksTable.tableArn],
     });
 
@@ -52,10 +58,11 @@ export class NodejsAwsShopReactBeStack extends Stack {
       code: Code.fromAsset("lambda"),
       handler: "fillDb.handler",
       environment: {
-        PRODUCT_TABLE_NAME: "products",
-        STOCK_TABLE_NAME: "stocks",
+        PRODUCT_TABLE_NAME: productsTable.tableName,
+        STOCK_TABLE_NAME: stocksTable.tableName,
       },
     });
+    fillDb.addToRolePolicy(dynamoPolicy);
 
     // define api gateway resource
     const gateway = new RestApi(this, "Product Service", {
