@@ -1,5 +1,6 @@
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { Cors, LambdaIntegration, RestApi } from "aws-cdk-lib/aws-apigateway";
+import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 
@@ -50,5 +51,18 @@ export class NodejsAwsShopReactBeStack extends Stack {
       .addMethod("GET", new LambdaIntegration(getProductsById));
 
     new CfnOutput(this, "GatewayUrl", { value: productResource.path });
+
+    const productsTable = new Table(this, "Products", {
+      partitionKey: { name: "id", type: AttributeType.STRING },
+      tableName: "products",
+      sortKey: { name: "title", type: AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    const stocksTable = new Table(this, "Stocks", {
+      partitionKey: { name: "product_id", type: AttributeType.STRING },
+      tableName: "stocks",
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
   }
 }
