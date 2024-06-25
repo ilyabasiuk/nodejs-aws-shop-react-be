@@ -1,5 +1,9 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBClient,
+  TransactWriteItemsCommand,
+} from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { marshall } from "@aws-sdk/util-dynamodb";
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyHandler,
@@ -40,28 +44,33 @@ export const handler: APIGatewayProxyHandler = async (
     // create product in dynamodb
     const id = v4();
     const { title, description, price, count } = body;
-    const command = new PutCommand({
-      TableName: process.env.PRODUCT_TABLE_NAME,
-      Item: {
-        id,
-        title,
-        description,
-        price,
-      },
+
+    const transactCommand = new TransactWriteItemsCommand({
+      TransactItems: [
+        {
+          Put: {
+            TableName: process.env.PRODUCT_TABLE_NAME,
+            Item: marshall({
+              id,
+              title,
+              description,
+              price,
+            }),
+          },
+        },
+        {
+          Put: {
+            TableName: process.env.STOCK_TABLE_NAME,
+            Item: marshall({
+              product_id: id,
+              count,
+            }),
+          },
+        },
+      ],
     });
 
-    const response = await docClient.send(command);
-    console.log(response);
-    // create stock in dynamodb
-    const commandStock = new PutCommand({
-      TableName: process.env.STOCK_TABLE_NAME,
-      Item: {
-        product_id: id,
-        count,
-      },
-    });
-    const responseStock = await docClient.send(commandStock);
-    console.log(responseStock);
+    const response = await docClient.send(transactCommand);
 
     return {
       statusCode: 200,
@@ -74,6 +83,7 @@ export const handler: APIGatewayProxyHandler = async (
       body: JSON.stringify({ message: "Product created", uuid: id }),
     };
   } catch (error) {
+    console.error("Error:", error);
     return {
       statusCode: 500,
       headers: {
