@@ -4,7 +4,7 @@ info:
   description: "This service serves products."
   version: "0.0.1"
 servers:
-  - url: "https://dyxjm4tjv9.execute-api.eu-west-1.amazonaws.com/{basePath}"
+  - url: "https://7zu57pqm72.execute-api.eu-west-1.amazonaws.com/{basePath}"
     variables:
       basePath:
         default: "prod"
@@ -20,14 +20,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Product"
+        "500":
+          description: Internal server error
+    post:
+      requestBody:
+        content:
+          application-json:
+            schema:
+              $ref: "#/components/schemas/NewProduct"
+      responses:
+        "200":
+          description: Product created
+        "400":
+          description: Invalid params
+        "500":
+          description: Internal server error
   /products/{productId}:
     get:
       parameters:
-        - name: "productId"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
+        - $ref: "#/components/parameters/productIdParam"
+
       responses:
         "200":
           description: "Single produt by id"
@@ -37,6 +49,10 @@ paths:
                 $ref: "#/components/schemas/Product"
         "404":
           description: "Product not found"
+        "400":
+          description: "Invalid product id"
+        "500":
+          description: Internal server error
 
 components:
   schemas:
@@ -51,4 +67,30 @@ components:
           type: number
         description:
           type: string
+        count:
+          type: integer
       description: product description
+    NewProduct:
+      type: object
+      required:
+        - title
+        - price
+        - count
+      properties:
+        title:
+          type: string
+        price:
+          type: number
+          minimum: 0.001
+        description:
+          type: string
+        count:
+          type: integer
+      description: new product info
+  parameters:
+    productIdParam:
+      name: "productId"
+      in: "path"
+      required: true
+      schema:
+        type: string
