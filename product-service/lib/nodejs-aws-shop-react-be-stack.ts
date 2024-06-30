@@ -4,7 +4,6 @@ import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
 import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
-import { get } from "http";
 
 export class NodejsAwsShopReactBeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
