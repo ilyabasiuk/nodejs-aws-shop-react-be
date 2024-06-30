@@ -66,6 +66,10 @@ export class ImportServiceStack extends Stack {
       runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset("lambda"),
       handler: "importFileParser.handler",
+      environment: {
+        IMPORT_PREFIX: importPrefix,
+        PROCESSED_PREFIX: "parsed/",
+      },
     });
 
     // call importFileParser lambda on s3:ObjectCreated:* event
@@ -89,6 +93,10 @@ export class ImportServiceStack extends Stack {
 
     importBucket.grantReadWrite(importProductsFile);
     importBucket.grantPut(importProductsFile);
+
+    importBucket.grantReadWrite(importFileParser);
+    importBucket.grantPut(importFileParser);
+    importBucket.grantPut(importFileParser);
 
     new CfnOutput(this, "GatewayUrl", { value: importResource.path });
   }
