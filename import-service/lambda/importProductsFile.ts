@@ -4,10 +4,7 @@ import {
   APIGatewayProxyResult,
 } from "aws-lambda";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import {
-  getSignedUrl,
-  S3RequestPresigner,
-} from "@aws-sdk/s3-request-presigner";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
@@ -22,7 +19,9 @@ export const handler: APIGatewayProxyHandler = async (
       statusCode: 500,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         message: "Environment variables are not provided",
@@ -34,7 +33,9 @@ export const handler: APIGatewayProxyHandler = async (
       statusCode: 400,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ message: "File name is not provided" }),
     };
@@ -46,13 +47,16 @@ export const handler: APIGatewayProxyHandler = async (
       bucket: bucketName,
       fileName: fileName,
     });
+    console.log("Presigned URL: ", presignedUrl);
     return {
       statusCode: 200,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET",
+        "Content-Type": "application/json",
       },
-      body: presignedUrl,
+      body: JSON.stringify({ url: presignedUrl }),
     };
   } catch (error) {
     console.error("Error: ", error);
@@ -60,7 +64,9 @@ export const handler: APIGatewayProxyHandler = async (
       statusCode: 500,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ message: "Internal server error" }),
     };
@@ -80,6 +86,7 @@ const createPresignedUrlWithClient = async ({
   const command = new PutObjectCommand({
     Bucket: bucket,
     Key: `uploaded/${fileName}`,
+    ContentType: "text/csv",
   });
   return getSignedUrl(client, command, { expiresIn: 3600 });
 };
