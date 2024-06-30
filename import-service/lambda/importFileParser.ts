@@ -5,6 +5,7 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
+import { Readable } from "stream";
 
 const client = new S3Client({});
 
@@ -20,23 +21,30 @@ async function handlePutRecord(record: S3EventRecord): Promise<void> {
   const processedPrefix = process.env.PROCESSED_PREFIX;
   const bucketName = record.s3.bucket.name;
   const objectKey = record.s3.object.key;
-  console.log(
-    `New object has been created: ${objectKey} in bucket: ${bucketName}`
-  );
+
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: objectKey,
   });
 
   try {
+    if (!importPrefix || !processedPrefix) {
+      console.error("IMPORT_PREFIX is not provided");
+      throw new Error("IMPORT_PREFIX is not provided");
+    }
     const data = await client.send(command);
-    console.log("Data: ", data);
+    if (!data.Body) {
+      throw new Error("No File");
+    }
+    const products = await parseFile(data.Body as Readable);
+
+    console.log("Products: ", products);
 
     // move the file to the processed folder
     const copyCommand = new CopyObjectCommand({
       Bucket: bucketName,
       CopySource: `${bucketName}/${objectKey}`,
-      Key: objectKey.replace(importPrefix!, processedPrefix!),
+      Key: objectKey.replace(importPrefix!, processedPrefix + Date.now() + "-"),
     });
     await client.send(copyCommand);
     console.log("File has been moved to the processed folder");
@@ -50,11 +58,21 @@ async function handlePutRecord(record: S3EventRecord): Promise<void> {
     console.log("File has been deleted from the uploaded folder");
   } catch (error) {
     console.error("Error: ", error);
+    return Promise.reject(error);
   }
-  // move the file to the processed folder
-
-  // parse the file and save the data to the database
-  // delete the file from the uploaded folder
-
   return Promise.resolve();
+}
+
+import * as csvParser from "csv-parser";
+async function parseFile(data: Readable): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const products: any[] = [];
+    data
+      .pipe(csvParser())
+      .on("data", (row) => {
+        products.push(row);
+      })
+      .on("end", () => resolve(products))
+      .on("error", (error) => reject(error));
+  });
 }
