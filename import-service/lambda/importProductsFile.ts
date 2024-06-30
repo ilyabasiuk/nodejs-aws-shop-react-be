@@ -13,6 +13,7 @@ export const handler: APIGatewayProxyHandler = async (
   const fileName = event.queryStringParameters?.name;
   const bucketName = process.env.BUCKET_NAME;
   const region = process.env.REGION;
+  const importPrefix = process.env.IMPORT_PREFIX;
 
   if (!bucketName || !region) {
     return {
@@ -45,7 +46,7 @@ export const handler: APIGatewayProxyHandler = async (
     const presignedUrl = await createPresignedUrlWithClient({
       region: region,
       bucket: bucketName,
-      fileName: fileName,
+      key: importPrefix + fileName,
     });
     console.log("Presigned URL: ", presignedUrl);
     return {
@@ -76,16 +77,16 @@ export const handler: APIGatewayProxyHandler = async (
 const createPresignedUrlWithClient = async ({
   region,
   bucket,
-  fileName,
+  key,
 }: {
   region: string;
   bucket: string;
-  fileName: string;
+  key: string;
 }): Promise<string> => {
   const client = new S3Client({ region });
   const command = new PutObjectCommand({
     Bucket: bucket,
-    Key: `uploaded/${fileName}`,
+    Key: key,
     ContentType: "text/csv",
   });
   return getSignedUrl(client, command, { expiresIn: 3600 });

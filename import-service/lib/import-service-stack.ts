@@ -2,7 +2,8 @@ import { Construct } from "constructs";
 import { RestApi, Cors, LambdaIntegration } from "aws-cdk-lib/aws-apigateway";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
-import { Bucket } from "aws-cdk-lib/aws-s3";
+import { Bucket, EventType } from "aws-cdk-lib/aws-s3";
+import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import {
   AwsCustomResource,
   AwsCustomResourcePolicy,
@@ -14,6 +15,7 @@ export class ImportServiceStack extends Stack {
 
     const nameOfNamuallyCreatedBucket = "ib-import-bucket-manual";
     const bucketRegion = "eu-west-1";
+    const importPrefix = "uploaded/";
     // The code that defines your stack goes here
     const importBucket = Bucket.fromBucketName(
       this,
@@ -60,6 +62,19 @@ export class ImportServiceStack extends Stack {
       },
     });
 
+    const importFileParser = new Function(this, "ImportFileParserHandler", {
+      runtime: Runtime.NODEJS_18_X,
+      code: Code.fromAsset("lambda"),
+      handler: "importFileParser.handler",
+    });
+
+    // call importFileParser lambda on s3:ObjectCreated:* event
+    importBucket.addEventNotification(
+      EventType.OBJECT_CREATED,
+      new LambdaDestination(importFileParser),
+      { prefix: importPrefix }
+    );
+
     const importProductsFile = new Function(this, "ImportProductsFileHandler", {
       runtime: Runtime.NODEJS_18_X,
       code: Code.fromAsset("lambda"),
@@ -67,6 +82,7 @@ export class ImportServiceStack extends Stack {
       environment: {
         BUCKET_NAME: importBucket.bucketName,
         REGION: bucketRegion,
+        IMPORT_PREFIX: importPrefix,
       },
     });
     importResource.addMethod("GET", new LambdaIntegration(importProductsFile));
