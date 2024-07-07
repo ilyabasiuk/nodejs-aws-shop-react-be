@@ -103,7 +103,7 @@ export class NodejsAwsShopReactBeStack extends Stack {
     });
     new CfnOutput(this, "CatalogItemsQueueUrl", {
       value: catalogItemsQueue.queueArn,
-      exportName: "CatalogItemsQueueServiceOne",
+      exportName: "catalogItemsQueue",
     });
     // end of sqs
 

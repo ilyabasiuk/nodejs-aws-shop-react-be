@@ -1,17 +1,29 @@
 import { Construct } from "constructs";
 import { RestApi, Cors, LambdaIntegration } from "aws-cdk-lib/aws-apigateway";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Stack, StackProps, Fn } from "aws-cdk-lib";
 import { Bucket, EventType } from "aws-cdk-lib/aws-s3";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import {
   AwsCustomResource,
   AwsCustomResourcePolicy,
 } from "aws-cdk-lib/custom-resources";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 
 export class ImportServiceStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
+    // get sqs queue by name
+    const catalogItemsQueue = Queue.fromQueueArn(
+      this,
+      "CatalogItemsQueue",
+      Fn.importValue("catalogItemsQueue")
+    );
+
+    new CfnOutput(this, "CatalogItemsQueueArn", {
+      value: catalogItemsQueue.queueArn,
+    });
 
     const nameOfNamuallyCreatedBucket = "ib-import-bucket-manual";
     const bucketRegion = "eu-west-1";
@@ -69,8 +81,10 @@ export class ImportServiceStack extends Stack {
       environment: {
         IMPORT_PREFIX: importPrefix,
         PROCESSED_PREFIX: "parsed/",
+        SQS_URL: catalogItemsQueue.queueUrl,
       },
     });
+    catalogItemsQueue.grantSendMessages(importFileParser);
 
     // call importFileParser lambda on s3:ObjectCreated:* event
     importBucket.addEventNotification(
