@@ -4,6 +4,9 @@ import { AttributeType, Table } from "aws-cdk-lib/aws-dynamodb";
 import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import { Duration } from "aws-cdk-lib";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 
 export class NodejsAwsShopReactBeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -92,6 +95,38 @@ export class NodejsAwsShopReactBeStack extends Stack {
       .addMethod("GET", new LambdaIntegration(getProductsById));
 
     productResource.addMethod("POST", new LambdaIntegration(createProduct));
+
+    // define SQS queue
+    const catalogItemsQueue = new Queue(this, "catalogItemsQueue", {
+      visibilityTimeout: Duration.seconds(300),
+      queueName: "catalogItemsQueue",
+    });
+    new CfnOutput(this, "CatalogItemsQueueUrl", {
+      value: catalogItemsQueue.queueArn,
+      exportName: "CatalogItemsQueueServiceOne",
+    });
+    // end of sqs
+
+    const catalogBatchProcess = new Function(
+      this,
+      "CatalogBatchProcessHandler",
+      {
+        runtime: Runtime.NODEJS_18_X,
+        code: Code.fromAsset("lambda"),
+        handler: "catalogBatchProcess.handler",
+        environment: {
+          ...environment,
+          SQS_URL: catalogItemsQueue.queueUrl,
+        },
+      }
+    );
+    catalogBatchProcess.addToRolePolicy(dynamoPolicy);
+
+    // connect lambda to sqs
+    catalogBatchProcess.addEventSource(
+      new SqsEventSource(catalogItemsQueue, { batchSize: 5 })
+    );
+    catalogItemsQueue.grantConsumeMessages(catalogBatchProcess);
 
     new CfnOutput(this, "GatewayUrl", { value: productResource.path });
   }
