@@ -7,6 +7,8 @@ import { Construct } from "constructs";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Duration } from "aws-cdk-lib";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { Topic } from "aws-cdk-lib/aws-sns";
+import { EmailSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 
 export class NodejsAwsShopReactBeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -107,6 +109,19 @@ export class NodejsAwsShopReactBeStack extends Stack {
     });
     // end of sqs
 
+    // define SNS topic
+
+    // define sns topic
+    const topic = new Topic(this, "createProductTopic", {
+      displayName: "Create Product Topic",
+      topicName: "createProductTopic",
+    });
+    // email subscription
+    topic.addSubscription(
+      new EmailSubscription("not-existing-email@outlook.com")
+    );
+    //
+
     const catalogBatchProcess = new Function(
       this,
       "CatalogBatchProcessHandler",
@@ -117,6 +132,7 @@ export class NodejsAwsShopReactBeStack extends Stack {
         environment: {
           ...environment,
           SQS_URL: catalogItemsQueue.queueUrl,
+          SNS_TOPIC_ARN: topic.topicArn,
         },
       }
     );
@@ -127,6 +143,7 @@ export class NodejsAwsShopReactBeStack extends Stack {
       new SqsEventSource(catalogItemsQueue, { batchSize: 5 })
     );
     catalogItemsQueue.grantConsumeMessages(catalogBatchProcess);
+    topic.grantPublish(catalogBatchProcess);
 
     new CfnOutput(this, "GatewayUrl", { value: productResource.path });
   }
