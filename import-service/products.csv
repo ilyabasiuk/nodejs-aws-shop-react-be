@@ -1,18 +1,18 @@
-title,description,price
-"Product 1 from csv","This is product 1",99.99
-"Product 2 from csv","This is product 2",89.99
-"Product 3 from csv","This is product 3",79.99
-"Product 4 from csv","This is product 4",69.99
-"Product 5 from csv","This is product 5",59.99
-"Product 6 from csv","This is product 6",49.99
-"Product 7 from csv","This is product 7",39.99
-"Product 8 from csv","This is product 8",29.99
-"Product 9 from csv","This is product 9",19.99
-"Product 10 from csv","This is product 10",9.99
-"Product 11 from csv","This is product 11",89.99
-"Product 12 from csv","This is product 12",79.99
-"Product 13 from csv","This is product 13",69.99
-"Product 14 from csv","This is product 14",59.99
-"Product 15 from csv","This is product 15",49.99
-"Product 16 from csv","This is product 16",39.99
-"Product 17 from csv","This is product 17",29.99
+title,description,price,count
+"Product 1 from csv","This is product 1",99.99,23
+"Product 2 from csv","This is product 2",89.99,45
+"Product 3 from csv","This is product 3",79.99,67
+"Product 4 from csv","This is product 4",69.99,89
+"Product 5 from csv","This is product 5",59.99,12
+"Product 6 from csv","This is product 6",49.99,34
+"Product 7 from csv","This is product 7",39.99,56
+"Product 8 from csv","This is product 8",29.99,78
+"Product 9 from csv","This is product 9",19.99,90
+"Product 10 from csv","This is product 10",9.99,21
+"Product 11 from csv","This is product 11",89.99,43
+"Product 12 from csv","This is product 12",79.99,65
+"Product 13 from csv","This is product 13",69.99,87
+"Product 14 from csv","This is product 14",59.99,9
+"Product 15 from csv","This is product 15",49.99,31
+"Product 16 from csv","This is product 16",39.99,53
+"Product 17 from csv","This is product 17",29.99,75
