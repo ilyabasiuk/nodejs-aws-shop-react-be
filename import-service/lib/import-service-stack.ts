@@ -1,5 +1,11 @@
 import { Construct } from "constructs";
-import { RestApi, Cors, LambdaIntegration } from "aws-cdk-lib/aws-apigateway";
+import {
+  RestApi,
+  Cors,
+  LambdaIntegration,
+  TokenAuthorizer,
+  AuthorizationType,
+} from "aws-cdk-lib/aws-apigateway";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { CfnOutput, Stack, StackProps, Fn } from "aws-cdk-lib";
 import { Bucket, EventType } from "aws-cdk-lib/aws-s3";
@@ -13,6 +19,12 @@ import { Queue } from "aws-cdk-lib/aws-sqs";
 export class ImportServiceStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
+    const basicAuthorizer = Function.fromFunctionName(
+      this,
+      "basicAuthorizer",
+      "basicAuthorizer"
+    );
 
     // get sqs queue by name
     const catalogItemsQueue = Queue.fromQueueArn(
@@ -67,6 +79,11 @@ export class ImportServiceStack extends Stack {
       description: "This service provide functionality for importing products.",
     });
 
+    const authorizer = new TokenAuthorizer(this, "Authorizer", {
+      handler: basicAuthorizer,
+      identitySource: "method.request.header.Authorization",
+    });
+
     const importResource = gateway.root.addResource("import", {
       defaultCorsPreflightOptions: {
         allowOrigins: Cors.ALL_ORIGINS,
@@ -103,7 +120,10 @@ export class ImportServiceStack extends Stack {
         IMPORT_PREFIX: importPrefix,
       },
     });
-    importResource.addMethod("GET", new LambdaIntegration(importProductsFile));
+    importResource.addMethod("GET", new LambdaIntegration(importProductsFile), {
+      authorizationType: AuthorizationType.CUSTOM,
+      authorizer,
+    });
 
     importBucket.grantReadWrite(importProductsFile);
     importBucket.grantPut(importProductsFile);
