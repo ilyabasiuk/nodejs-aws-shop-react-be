@@ -21,11 +21,11 @@ export class AuthorizationServiceStack extends cdk.Stack {
         USERNAME: login,
         PASSWORD: password!,
       },
+      functionName: "basicAuthorizer",
     });
 
     new cdk.CfnOutput(this, "basicAuthorizer", {
-      value: basicAuthorizer.functionArn,
-      exportName: "BasicAuthorizerArn",
+      value: basicAuthorizer.functionName,
     });
   }
 }

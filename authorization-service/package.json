@@ -13,6 +13,7 @@
     "dep": "npm run build && cdk deploy --hotswap"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.141",
     "@types/jest": "^29.5.12",
     "@types/node": "20.12.7",
     "aws-cdk": "2.145.0",
