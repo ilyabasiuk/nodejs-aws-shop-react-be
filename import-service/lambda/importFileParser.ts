@@ -1,4 +1,5 @@
 import { S3Event, S3Handler, S3EventRecord } from "aws-lambda";
+import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import {
   GetObjectCommand,
   S3Client,
@@ -8,6 +9,7 @@ import {
 import { Readable } from "stream";
 
 const client = new S3Client({});
+const sqsClient = new SQSClient({});
 
 export const handler: S3Handler = async (event: S3Event): Promise<void> => {
   for (const record of event.Records) {
@@ -19,6 +21,7 @@ async function handlePutRecord(record: S3EventRecord): Promise<void> {
   console.log("Record: ", record);
   const importPrefix = process.env.IMPORT_PREFIX;
   const processedPrefix = process.env.PROCESSED_PREFIX;
+  const sqsUrl = process.env.SQS_URL;
   const bucketName = record.s3.bucket.name;
   const objectKey = record.s3.object.key;
 
@@ -28,9 +31,9 @@ async function handlePutRecord(record: S3EventRecord): Promise<void> {
   });
 
   try {
-    if (!importPrefix || !processedPrefix) {
-      console.error("IMPORT_PREFIX is not provided");
-      throw new Error("IMPORT_PREFIX is not provided");
+    if (!importPrefix || !processedPrefix || !sqsUrl) {
+      console.error("Environment variables are not provided");
+      throw new Error("Environment variables are not provided");
     }
     const data = await client.send(command);
     if (!data.Body) {
@@ -38,7 +41,17 @@ async function handlePutRecord(record: S3EventRecord): Promise<void> {
     }
     const products = await parseFile(data.Body as Readable);
 
-    console.log("Products: ", products);
+    // send message to the SQS queue
+    let promises = products.map((product: any) => {
+      const sqsCommand = new SendMessageCommand({
+        QueueUrl: sqsUrl!,
+        MessageBody: JSON.stringify(product),
+      });
+      return sqsClient.send(sqsCommand);
+    });
+
+    await Promise.all(promises);
+    console.log("Products have been sent to the SQS queue", products);
 
     // move the file to the processed folder
     const copyCommand = new CopyObjectCommand({
