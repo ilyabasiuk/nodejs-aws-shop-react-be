@@ -12,6 +12,7 @@ export class AuthorizationServiceStack extends cdk.Stack {
 
     const login = "ilyabasiuk";
     const password = process.env[login];
+    console.log(process.env.ilyabasiuk);
 
     const basicAuthorizer = new Function(this, "BasicAuthorizer", {
       runtime: Runtime.NODEJS_16_X,
